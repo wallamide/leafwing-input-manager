@@ -26,6 +26,8 @@ pub struct SingleAxis {
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
+    /// Should these values be clamped into the range [-1, 1]
+    pub clamped: bool,
     /// The target value for this input, used for input mocking.
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
@@ -36,10 +38,13 @@ impl SingleAxis {
     /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
     #[must_use]
     pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        let axis_type = axis_type.into();
+
         SingleAxis {
-            axis_type: axis_type.into(),
+            axis_type,
             positive_low: threshold,
             negative_low: -threshold,
+            clamped: axis_type.should_clamp(),
             value: None,
         }
     }
@@ -50,10 +55,13 @@ impl SingleAxis {
     /// Primarily useful for [input mocking](crate::MockInput).
     #[must_use]
     pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
+        let axis_type = axis_type.into();
+
         SingleAxis {
-            axis_type: axis_type.into(),
+            axis_type,
             positive_low: 0.0,
             negative_low: 0.0,
+            clamped: axis_type.should_clamp(),
             value: Some(value),
         }
     }
@@ -65,6 +73,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             positive_low: 0.,
             negative_low: 0.,
+            clamped: false,
             value: None,
         }
     }
@@ -76,6 +85,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
             positive_low: 0.,
             negative_low: 0.,
+            clamped: false,
             value: None,
         }
     }
@@ -87,6 +97,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             positive_low: 0.,
             negative_low: 0.,
+            clamped: false,
             value: None,
         }
     }
@@ -98,6 +109,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
             positive_low: 0.,
             negative_low: 0.,
+            clamped: false,
             value: None,
         }
     }
@@ -106,10 +118,13 @@ impl SingleAxis {
     ///
     /// Positive values will not trigger the input.
     pub fn negative_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        let axis_type = axis_type.into();
+
         SingleAxis {
-            axis_type: axis_type.into(),
+            axis_type,
             negative_low: threshold,
             positive_low: f32::MAX,
+            clamped: axis_type.should_clamp(),
             value: None,
         }
     }
@@ -118,10 +133,13 @@ impl SingleAxis {
     ///
     /// Negative values will not trigger the input.
     pub fn positive_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        let axis_type = axis_type.into();
+
         SingleAxis {
-            axis_type: axis_type.into(),
+            axis_type,
             negative_low: f32::MIN,
             positive_low: threshold,
+            clamped: axis_type.should_clamp(),
             value: None,
         }
     }
@@ -131,6 +149,13 @@ impl SingleAxis {
     pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
         self.negative_low = deadzone;
         self.positive_low = deadzone;
+        self
+    }
+
+    /// Returns this [`SingleAxis`] with the `clamp` field set to the specified value
+    #[must_use]
+    pub fn with_clamp(mut self, clamp: bool) -> SingleAxis {
+        self.clamp = clamp;
         self
     }
 }
@@ -248,6 +273,14 @@ impl DualAxis {
         self.y = self.y.with_deadzone(deadzone);
         self
     }
+
+    /// Returns this [`DualAxis`] with the `clamp` field on both underlying [`SingleAxis`] structs set to the specified value
+    #[must_use]
+    pub fn with_clamp(mut self, clamp: bool) -> DualAxis {
+        self.x.clamp = clamp;
+        self.y.clamp = clamp;
+        self
+    }
 }
 
 #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
@@ -345,6 +378,17 @@ pub enum AxisType {
     MouseWheel(MouseWheelAxisType),
     /// Input associated with movement of the mouse
     MouseMotion(MouseMotionAxisType),
+}
+
+impl AxisType {
+    /// Should the values returned by this axis be clamped by default?
+    pub fn should_clamp(self) -> bool {
+        match self {
+            AxisType::Gamepad(..) => true,
+            AxisType::MouseWheel(..) => false,
+            AxisType::MouseMotion(..) => false,
+        }
+    }
 }
 
 /// The direction of motion of the mouse wheel.
