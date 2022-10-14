@@ -163,10 +163,10 @@ impl SingleAxis {
         self
     }
 
-    /// Returns this [`SingleAxis`] with the `clamp` field set to the specified value
+    /// Returns this [`SingleAxis`] with the `clamped` field set to the specified value
     #[inline]
     #[must_use]
-    pub fn with_clamp(mut self, clamp: bool) -> SingleAxis {
+    pub fn with_clamped(mut self, clamp: bool) -> SingleAxis {
         self.clamp = clamp;
         self
     }
@@ -295,10 +295,10 @@ impl DualAxis {
         self
     }
 
-    /// Returns this [`DualAxis`] with the `clamp` field on both underlying [`SingleAxis`] structs set to the specified value
+    /// Returns this [`DualAxis`] with the `clamped` field on both underlying [`SingleAxis`] structs set to the specified value
     #[inline]
     #[must_use]
-    pub fn with_clamp(mut self, clamp: bool) -> DualAxis {
+    pub fn with_clamped(mut self, clamp: bool) -> DualAxis {
         self.x.clamp = clamp;
         self.y.clamp = clamp;
         self
