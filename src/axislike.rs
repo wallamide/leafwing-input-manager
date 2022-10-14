@@ -36,6 +36,7 @@ pub struct SingleAxis {
 
 impl SingleAxis {
     /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
+    #[inline]
     #[must_use]
     pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
         let axis_type = axis_type.into();
@@ -53,6 +54,7 @@ impl SingleAxis {
     ///
     /// All thresholds are set to 0.0.
     /// Primarily useful for [input mocking](crate::MockInput).
+    #[inline]
     #[must_use]
     pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
         let axis_type = axis_type.into();
@@ -67,6 +69,7 @@ impl SingleAxis {
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
+    #[inline]
     #[must_use]
     pub const fn mouse_wheel_x() -> SingleAxis {
         SingleAxis {
@@ -79,6 +82,7 @@ impl SingleAxis {
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
+    #[inline]
     #[must_use]
     pub const fn mouse_wheel_y() -> SingleAxis {
         SingleAxis {
@@ -91,6 +95,7 @@ impl SingleAxis {
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
+    #[inline]
     #[must_use]
     pub const fn mouse_motion_x() -> SingleAxis {
         SingleAxis {
@@ -103,6 +108,7 @@ impl SingleAxis {
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
+    #[inline]
     #[must_use]
     pub const fn mouse_motion_y() -> SingleAxis {
         SingleAxis {
@@ -117,6 +123,8 @@ impl SingleAxis {
     /// Creates a [`SingleAxis`] with the `axis_type` and `negative_low` set to `threshold`.
     ///
     /// Positive values will not trigger the input.
+    #[inline]
+    #[must_use]
     pub fn negative_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
         let axis_type = axis_type.into();
 
@@ -132,6 +140,8 @@ impl SingleAxis {
     /// Creates a [`SingleAxis`] with the `axis_type` and `positive_low` set to `threshold`.
     ///
     /// Negative values will not trigger the input.
+    #[inline]
+    #[must_use]
     pub fn positive_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
         let axis_type = axis_type.into();
 
@@ -145,6 +155,7 @@ impl SingleAxis {
     }
 
     /// Returns this [`SingleAxis`] with the deadzone set to the specified value
+    #[inline]
     #[must_use]
     pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
         self.negative_low = deadzone;
@@ -153,6 +164,7 @@ impl SingleAxis {
     }
 
     /// Returns this [`SingleAxis`] with the `clamp` field set to the specified value
+    #[inline]
     #[must_use]
     pub fn with_clamp(mut self, clamp: bool) -> SingleAxis {
         self.clamp = clamp;
@@ -201,6 +213,7 @@ impl DualAxis {
     pub const DEFAULT_DEADZONE: f32 = 0.1;
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
+    #[inline]
     #[must_use]
     pub fn symmetric(
         x_axis_type: impl Into<AxisType>,
@@ -217,6 +230,7 @@ impl DualAxis {
     ///
     /// All thresholds are set to 0.0.
     /// Primarily useful for [input mocking](crate::MockInput).
+    #[inline]
     #[must_use]
     pub fn from_value(
         x_axis_type: impl Into<AxisType>,
@@ -231,6 +245,7 @@ impl DualAxis {
     }
 
     /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
+    #[inline]
     #[must_use]
     pub fn left_stick() -> DualAxis {
         DualAxis::symmetric(
@@ -241,6 +256,7 @@ impl DualAxis {
     }
 
     /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
+    #[inline]
     #[must_use]
     pub fn right_stick() -> DualAxis {
         DualAxis::symmetric(
@@ -251,6 +267,8 @@ impl DualAxis {
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
+    #[inline]
+    #[must_use]
     pub const fn mouse_wheel() -> DualAxis {
         DualAxis {
             x: SingleAxis::mouse_wheel_x(),
@@ -259,6 +277,8 @@ impl DualAxis {
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
+    #[inline]
+    #[must_use]
     pub const fn mouse_motion() -> DualAxis {
         DualAxis {
             x: SingleAxis::mouse_motion_x(),
@@ -267,6 +287,7 @@ impl DualAxis {
     }
 
     /// Returns this [`DualAxis`] with the deadzone set to the specified value
+    #[inline]
     #[must_use]
     pub fn with_deadzone(mut self, deadzone: f32) -> DualAxis {
         self.x = self.x.with_deadzone(deadzone);
@@ -275,6 +296,7 @@ impl DualAxis {
     }
 
     /// Returns this [`DualAxis`] with the `clamp` field on both underlying [`SingleAxis`] structs set to the specified value
+    #[inline]
     #[must_use]
     pub fn with_clamp(mut self, clamp: bool) -> DualAxis {
         self.x.clamp = clamp;
