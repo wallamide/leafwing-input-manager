@@ -31,10 +31,34 @@ pub struct SingleAxis {
     /// The target value for this input, used for input mocking.
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
-    pub value: Option<f32>,
+    value: Option<f32>,
 }
 
 impl SingleAxis {
+    /// Gets the stored value of this struct, which represents the position on this axis.
+    ///
+    /// This is typically used for input mocking.
+    ///
+    /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
+    pub fn value(&self) -> Option<f32> {
+        self.value
+    }
+
+    /// Sets the stored value of this struct, which represents the position on this axis.
+    ///
+    /// This will respect the `clamped` field of this struct, which limits this value to the range [-1, 1].
+    pub fn set_value(&self, value: Option<f32>) {
+        if let Some(value) = value {
+            self.value = if self.clamped {
+                Some(value.clamp(-1, 1.))
+            } else {
+                Some(value)
+            }
+        } else {
+            self.value = None;
+        }
+    }
+
     /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
     #[inline]
     #[must_use]
@@ -59,13 +83,15 @@ impl SingleAxis {
     pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
         let axis_type = axis_type.into();
 
-        SingleAxis {
+        let axis = SingleAxis {
             axis_type,
             positive_low: 0.0,
             negative_low: 0.0,
             clamped: axis_type.should_clamp(),
-            value: Some(value),
-        }
+            value: None,
+        };
+        axis.set_value(Some(value));
+        axis
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
@@ -286,7 +312,7 @@ impl DualAxis {
         }
     }
 
-    /// Returns this [`DualAxis`] with the deadzone set to the specified value
+    /// Returns this [`DualAxis`] with the deadzone set
     #[inline]
     #[must_use]
     pub fn with_deadzone(mut self, deadzone: f32) -> DualAxis {
@@ -295,7 +321,7 @@ impl DualAxis {
         self
     }
 
-    /// Returns this [`DualAxis`] with the `clamped` field on both underlying [`SingleAxis`] structs set to the specified value
+    /// Returns this [`DualAxis`] with the `clamped` field on both underlying [`SingleAxis`] structs set
     #[inline]
     #[must_use]
     pub fn with_clamped(mut self, clamp: bool) -> DualAxis {
@@ -404,6 +430,8 @@ pub enum AxisType {
 
 impl AxisType {
     /// Should the values returned by this axis be clamped by default?
+    ///
+    /// Gamepad axes should be clamped, while mouse wheel and mouse motion axes should not.
     pub fn should_clamp(self) -> bool {
         match self {
             AxisType::Gamepad(..) => true,
@@ -505,20 +533,32 @@ pub struct AxisConversionError;
 #[derive(Debug, Copy, Clone, PartialEq, Default, Deserialize, Serialize)]
 pub struct DualAxisData {
     xy: Vec2,
+    clamped: bool,
 }
 
 // Constructors
 impl DualAxisData {
     /// Creates a new [`AxisPair`] from the provided (x,y) coordinates
-    pub fn new(x: f32, y: f32) -> DualAxisData {
+    pub fn new(x: f32, y: f32, clamped: bool) -> DualAxisData {
+        if clamped {
+            x = x.clamp(-1., 1.);
+            y = y.clamp(-1, 1.);
+        }
+
         DualAxisData {
             xy: Vec2::new(x, y),
+            clamped,
         }
     }
 
     /// Creates a new [`AxisPair`] directly from a [`Vec2`]
-    pub fn from_xy(xy: Vec2) -> DualAxisData {
-        DualAxisData { xy }
+    pub fn from_xy(xy: Vec2, clamped: bool) -> DualAxisData {
+        if clamped {
+            xy.x = xy.x.clamp(-1., 1.);
+            xy.y = xy.y.clamp(-1, 1.);
+        }
+
+        DualAxisData { xy, clamped }
     }
 
     /// Merge the state of this [`AxisPair`] with another.
@@ -526,12 +566,11 @@ impl DualAxisData {
     /// This is useful if you have multiple sticks bound to the same game action,
     /// and you want to get their combined position.
     ///
-    /// # Warning
-    ///
-    /// This method can result in values with a greater maximum magnitude than expected!
-    /// Use [`AxisPair::clamp_length`] to limit the resulting direction.
+    /// If either `self` or `other` is clamped, the resulting input will also be clamped.
     pub fn merged_with(&self, other: DualAxisData) -> DualAxisData {
-        DualAxisData::from_xy(self.xy() + other.xy())
+        let clamped = self.clamped | other.clamped;
+
+        DualAxisData::from_xy(self.xy() + other.xy(), clamped)
     }
 }
 
@@ -606,8 +645,25 @@ impl DualAxisData {
     }
 
     /// Clamps the magnitude of the axis
+    ///
+    /// Note that [`AxisType::Gamepad`] axes are automatically clamped in the range [-1, 1] on both axes.
+    /// However, this constrians the input to a square.
+    /// In many cases, you want to clamp this to a circle instead:
+    /// otherwise e.g. walking diagonally will be faster than walking up and down.
+    ///
+    /// When `max` is 1., consider using the clearer `clamp_to_unit_circle` method instead.
     pub fn clamp_length(&mut self, max: f32) {
         self.xy = self.xy.clamp_length_max(max);
+    }
+
+    /// Clamps the magnitude of the axis to 1.0
+    ///
+    /// Note that [`AxisType::Gamepad`] axes are automatically clamped in the range [-1, 1] on both axes.
+    /// However, this constrians the input to a square.
+    /// In many cases, you want to clamp this to a circle instead:
+    /// otherwise e.g. walking diagonally will be faster than walking up and down.
+    pub fn clamp_to_unit_circle(&mut self) {
+        self.clamp_length(1.0)
     }
 }
 

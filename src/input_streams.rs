@@ -336,9 +336,9 @@ impl<'a> InputStreams<'a> {
                     || y > dual_axis.y.positive_low
                     || y < dual_axis.y.negative_low
                 {
-                    Some(DualAxisData::new(x, y))
+                    Some(DualAxisData::new(x, y, dual_axis.clamped))
                 } else {
-                    Some(DualAxisData::new(0.0, 0.0))
+                    Some(DualAxisData::new(0.0, 0.0, dual_axis.clamped))
                 }
             }
             UserInput::VirtualDPad(VirtualDPad {
@@ -351,7 +351,8 @@ impl<'a> InputStreams<'a> {
                     - self.input_value(&UserInput::Single(*left)).abs();
                 let y = self.input_value(&UserInput::Single(*up)).abs()
                     - self.input_value(&UserInput::Single(*down)).abs();
-                Some(DualAxisData::new(x, y))
+                // D-pad input should always be clamped
+                Some(DualAxisData::new(x, y, true))
             }
             _ => None,
         }
