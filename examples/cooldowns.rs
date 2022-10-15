@@ -36,6 +36,10 @@ impl PlayerAction {
             (KeyCode::Space, PlayerAction::Shoot),
         ])
     }
+
+    fn cooldowns() -> Cooldowns<PlayerAction> {
+        Cooldowns::new([(Cooldown::from_secs(0.2), PlayerAction::Shoot)])
+    }
 }
 
 #[derive(Component, Default)]
@@ -105,6 +109,7 @@ mod player {
             input_manager: InputManagerBundle::<PlayerAction> {
                 action_state: ActionState::default(),
                 input_map: PlayerAction::input_map(),
+                cooldowns: PlayerAction::cooldowns(),
             },
             ..default()
         });
@@ -113,18 +118,24 @@ mod player {
     fn player_act(
         mut commands: Commands,
         mut velocity_query: Query<(&Transform, &mut Velocity), With<Player>>,
-        action_query: Query<&ActionState<PlayerAction>, With<Player>>,
+        mut action_query: Query<
+            (&ActionState<PlayerAction>, &mut Cooldowns<PlayerAction>),
+            With<Player>,
+        >,
         player_touching_platform: Res<PlayerTouchingPlatform>,
     ) {
-        let action_state = action_query.single();
+        let (action_state, mut cooldowns) = action_query.single_mut();
         let (player_transform, mut velocity) = velocity_query.single_mut();
 
         if action_state.just_pressed(PlayerAction::Jump) {
             velocity.0.y += 15.0;
         }
 
-        if action_state.pressed(PlayerAction::Shoot) {
+        // Check to see if the cooldown is ready
+        if action_state.pressed(PlayerAction::Shoot) && cooldowns.ready(PlayerAction::Shoot) {
             commands.spawn_bundle(BulletBundle::new(player_transform.translation.xy()));
+            // If we end up using the action, remember to trigger the cooldown!
+            cooldowns.trigger(PlayerAction::Shoot);
         }
 
         if action_state.pressed(PlayerAction::MoveLeft) && player_touching_platform.is_touching() {
