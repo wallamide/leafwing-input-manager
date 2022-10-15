@@ -35,10 +35,8 @@ pub fn spawn_camera(mut commands: Commands) {
     });
 }
 
-#[derive(Default, Actionlike, Clone, Copy)]
+#[derive(Actionlike, Clone, Copy)]
 enum PlayerAction {
-    #[default]
-    DoNothing,
     MoveLeft,
     MoveRight,
     Jump,
